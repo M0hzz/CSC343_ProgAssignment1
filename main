@@ -1,0 +1,157 @@
+import java.util.Arrays;
+import java.util.Random;
+
+public class Main {
+    // Constants
+    private static final int TOTAL_MEMORY_GB = 16;
+    private static final int TOTAL_PAGES = 100;
+    private static final int PAGE_SIZE_MB = (TOTAL_MEMORY_GB * 1024) / TOTAL_PAGES; // 160 MB
+    private static final int PROCESS_PAGE_SIZE_MB = 80; // Each random number represents 80 MB
+    private static final int STARTING_ADDRESS = 2000; // Starting memory address
+    
+    // Memory array to store process IDs
+    private int[] memoryPages;
+    // Array to store process details for reporting
+    private Process[] processes;
+    private int processCount;
+    
+    // Process class to store process details
+    static class Process {
+        int processId;
+        int startingAddress;
+        int sizeInMB;
+        int unusedSpaceMB;
+        
+        public Process(int processId, int startingAddress, int sizeInMB, int unusedSpaceMB) {
+            this.processId = processId;
+            this.startingAddress = startingAddress;
+            this.sizeInMB = sizeInMB;
+            this.unusedSpaceMB = unusedSpaceMB;
+        }
+    }
+    
+    // Constructor
+    public Main() {
+        memoryPages = new int[TOTAL_PAGES];
+        Arrays.fill(memoryPages, -1); // Initialize with -1 (unallocated)
+        processes = new Process[TOTAL_PAGES]; // Maximum possible processes
+        processCount = 0;
+    }
+    
+    // Method to allocate memory for processes
+    public void userMemoryAllocation() {
+        Random random = new Random();
+        int currentAddress = STARTING_ADDRESS;
+        int processId = 1;
+        int availablePages = TOTAL_PAGES;
+        
+        // Continue allocating processes until we run out of space
+        while (availablePages > 0) {
+            // Generate random number between 1 and 30 to determine process size
+            int randomNumber = random.nextInt(30) + 1;
+            int processSizeMB = randomNumber * PROCESS_PAGE_SIZE_MB;
+            
+            // Calculate required pages (round up)
+            int requiredPages = (int) Math.ceil((double) processSizeMB / PAGE_SIZE_MB);
+            
+            // Check if we have enough pages left
+            if (requiredPages > availablePages) {
+                break; // Not enough space for this process
+            }
+            
+            // Allocate memory for this process
+            int startPage = findFirstAvailablePage(requiredPages);
+            if (startPage == -1) {
+                break; // No contiguous space available
+            }
+            
+            // Mark pages as allocated to this process
+            for (int i = startPage; i < startPage + requiredPages; i++) {
+                memoryPages[i] = processId;
+            }
+            
+            // Calculate unused space
+            int totalAllocatedMemoryMB = requiredPages * PAGE_SIZE_MB;
+            int unusedSpaceMB = totalAllocatedMemoryMB - processSizeMB;
+            
+            // Store process details for reporting
+            processes[processCount++] = new Process(
+                processId,
+                currentAddress,
+                processSizeMB,
+                unusedSpaceMB
+            );
+            
+            // Update address for next process
+            currentAddress += totalAllocatedMemoryMB;
+            
+            // Update available pages
+            availablePages -= requiredPages;
+            
+            // Increment process ID for next process
+            processId++;
+        }
+    }
+    
+    // Helper method to find first available contiguous block of pages
+    private int findFirstAvailablePage(int requiredPages) {
+        int consecutiveEmpty = 0;
+        int startPage = -1;
+        
+        for (int i = 0; i < TOTAL_PAGES; i++) {
+            if (memoryPages[i] == -1) {
+                if (consecutiveEmpty == 0) {
+                    startPage = i;
+                }
+                consecutiveEmpty++;
+                
+                if (consecutiveEmpty == requiredPages) {
+                    return startPage;
+                }
+            } else {
+                consecutiveEmpty = 0;
+                startPage = -1;
+            }
+        }
+        
+        return -1; // No suitable block found
+    }
+    
+    // Method to print summary report
+    public void printSummaryReport() {
+        System.out.println("Summary Report:");
+        System.out.println("Process Id\tStarting Memory Address\tSize of the Process MB\tUnused Space MB");
+        
+        for (int i = 0; i < processCount; i++) {
+            Process process = processes[i];
+            System.out.println(String.format("%-10d\t%-25d\t%-25d\t%-15d",
+                process.processId,
+                process.startingAddress,
+                process.sizeInMB,
+                process.unusedSpaceMB));
+        }
+        
+        System.out.println("\nMemory Utilization Summary:");
+        System.out.println("Total Processes: " + processCount);
+        
+        // Calculate total allocated and unused memory
+        int totalAllocatedMB = 0;
+        int totalUnusedMB = 0;
+        for (int i = 0; i < processCount; i++) {
+            totalAllocatedMB += processes[i].sizeInMB;
+            totalUnusedMB += processes[i].unusedSpaceMB;
+        }
+        
+        System.out.println("Total Allocated Memory: " + totalAllocatedMB + " MB");
+        System.out.println("Total Unused Memory: " + totalUnusedMB + " MB");
+        System.out.println("Memory Utilization: " + 
+                String.format("%.2f", (double)(totalAllocatedMB) / (TOTAL_MEMORY_GB * 1024) * 100) + "%");
+    }
+    
+    // Main method to run the simulation
+    public static void main(String[] args) {
+        Main simulator = new Main();
+        simulator.userMemoryAllocation();
+        simulator.printSummaryReport();
+    }
+}
