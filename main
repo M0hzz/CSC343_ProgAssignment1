@@ -119,8 +119,7 @@ public class Main {
     
     // Method to print summary report
     public void printSummaryReport() {
-        System.out.println("Summary Report:");
-        System.out.println("Process Id\tStarting Memory Address\tSize of the Process MB\tUnused Space MB");
+        System.out.println("Process Id\tStarting Memory Address\t\tSize of the Process MB\t\tUnused Space MB");
         
         for (int i = 0; i < processCount; i++) {
             Process process = processes[i];
@@ -131,7 +130,6 @@ public class Main {
                 process.unusedSpaceMB));
         }
         
-        System.out.println("\nMemory Utilization Summary:");
         System.out.println("Total Processes: " + processCount);
         
         // Calculate total allocated and unused memory
